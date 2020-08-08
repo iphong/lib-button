@@ -1,3 +1,6 @@
+//
+// Author: Phong Vu
+//
 #include <Arduino.h>
 
 #ifndef __BUTTON_H__
