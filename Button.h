@@ -17,38 +17,40 @@ using namespace experimental::CBListImplentation;
 class Button {
 protected:
 	uint8_t _pin;
-	uint8_t _repeat;
-	bool _state;
+	uint8_t _repeat = 0;
+	bool _state = HIGH;
 	bool _longPressed = true;
+	uint16_t _duration = 0;
 	uint16_t _lastPressed;
 	uint16_t _lastReleased;
-	uint16_t _duration;
-	Ticker _loop;
+	Ticker _timer;
+	bool _busy;
 
 public:
 	using onClickCallback = std::function<void(int)>;
 	using onClickHandler = CallBackList<onClickCallback>::CallBackHandler;
 
-	using onHoldCallBack = std::function<void()>;
+	using onHoldCallBack = std::function<void(int)>;
     using onHoldHandler  = CallBackList<onHoldCallBack>::CallBackHandler;
 
     CallBackList<onClickCallback> onClickHandlers;
-    CallBackList<onHoldCallBack> onHoldHandlers;
+    CallBackList<onHoldCallBack> onPressHoldHandlers;
 	
-	Button(uint8_t pin) {
-		_pin = pin;
+	onClickHandler onClick(onClickCallback cb) {
+		return onClickHandlers.add(cb);
 	}
-	void onPress(onClickCallback cb) { 
-		onClickHandlers.add(cb);
+	onHoldHandler onPressHold(onHoldCallBack cb) {
+		return onPressHoldHandlers.add(cb);
 	}
-	void onHold(onHoldCallBack cb) {
-		onHoldHandlers.add(cb);
-	}
+
+	Button(uint8_t pin): _pin(pin) {}
+
 	void begin() {
 		pinMode(_pin, INPUT_PULLUP);
 		_state = digitalRead(_pin);
-		_lastReleased = millis();
-		_loop.attach_ms_scheduled_accurate(10, [this]() {
+		_timer.attach_ms_scheduled_accurate(1, [this]() {
+			if (_busy) return;
+			_busy = true;
 			bool state = digitalRead(_pin);
 			if (state != _state) {
 				if (!state && millis() - _lastReleased > MIN_PRESS_DURATION) {
@@ -70,7 +72,7 @@ public:
 				if (!_state) {
 					_duration = millis() - _lastPressed;
 					if (!_longPressed && _duration > LONG_PRESS_DURATION) {
-						onHoldHandlers.execute();
+						onPressHoldHandlers.execute(_repeat);
 						_longPressed = true;
 						_repeat = 0;
 					}
@@ -82,6 +84,7 @@ public:
 					}
 				}
 			}
+			_busy = false;
 		});
 	}
 };
