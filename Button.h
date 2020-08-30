@@ -21,10 +21,10 @@ protected:
 	bool _state = HIGH;
 	bool _longPressed = true;
 	uint16_t _duration = 0;
-	uint16_t _lastPressed;
-	uint16_t _lastReleased;
+	uint16_t _lastPressed = 0;
+	uint16_t _lastReleased = 0;
+	bool _busy = false;
 	Ticker _timer;
-	bool _busy;
 
 public:
 	using onClickCallback = std::function<void(int)>;
@@ -71,14 +71,14 @@ public:
 			else {
 				if (!_state) {
 					_duration = millis() - _lastPressed;
-					if (!_longPressed && _duration > LONG_PRESS_DURATION) {
+					if (_lastPressed && !_longPressed && _duration > LONG_PRESS_DURATION) {
 						onPressHoldHandlers.execute(_repeat);
 						_longPressed = true;
 						_repeat = 0;
 					}
 				} else {
 					_duration = millis() - _lastReleased;
-					if (!_longPressed && _repeat && _duration > SHORT_PRESS_DURATION) {
+					if (_lastReleased && !_longPressed && _repeat && _duration > SHORT_PRESS_DURATION) {
 						onClickHandlers.execute(_repeat);
 						_repeat = 0;
 					}
