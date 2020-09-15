@@ -3,7 +3,6 @@
 //
 #include <Arduino.h>
 #include <Ticker.h>
-#include "CallBackList.h"
 
 #ifndef __BUTTON_H__
 #define __BUTTON_H__
@@ -11,8 +10,6 @@
 #define MIN_PRESS_DURATION 100
 #define SHORT_PRESS_DURATION 300
 #define LONG_PRESS_DURATION 600
-
-using namespace experimental::CBListImplentation;
 
 class Button {
 protected:
@@ -27,20 +24,17 @@ protected:
 	Ticker _timer;
 
 public:
-	using onClickCallback = std::function<void(int)>;
-	using onClickHandler = CallBackList<onClickCallback>::CallBackHandler;
+	using callback_t = std::function<void(int)>;
 
-	using onHoldCallBack = std::function<void(int)>;
-    using onHoldHandler  = CallBackList<onHoldCallBack>::CallBackHandler;
+	callback_t onPressCallback;
+	callback_t onPressHoldCallback;
 
-    CallBackList<onClickCallback> onClickHandlers;
-    CallBackList<onHoldCallBack> onPressHoldHandlers;
-	
-	onClickHandler onClick(onClickCallback cb) {
-		return onClickHandlers.add(cb);
+	void onPress(callback_t cb) {
+		onPressCallback = cb;
 	}
-	onHoldHandler onPressHold(onHoldCallBack cb) {
-		return onPressHoldHandlers.add(cb);
+
+	void onPressHold(callback_t cb) {
+		onPressHoldCallback = cb;
 	}
 
 	Button(uint8_t pin): _pin(pin) {}
@@ -72,14 +66,14 @@ public:
 				if (!_state) {
 					_duration = millis() - _lastPressed;
 					if (_lastPressed && !_longPressed && _duration > LONG_PRESS_DURATION) {
-						onPressHoldHandlers.execute(_repeat);
+						if (onPressHoldCallback) onPressHoldCallback(_repeat);
 						_longPressed = true;
 						_repeat = 0;
 					}
 				} else {
 					_duration = millis() - _lastReleased;
 					if (_lastReleased && !_longPressed && _repeat && _duration > SHORT_PRESS_DURATION) {
-						onClickHandlers.execute(_repeat);
+						if (onPressCallback) onPressCallback(_repeat);
 						_repeat = 0;
 					}
 				}
