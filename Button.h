@@ -41,7 +41,6 @@ public:
 
 	void begin() {
 		pinMode(_pin, INPUT_PULLUP);
-		_state = digitalRead(_pin);
 		_timer.attach_ms_scheduled_accurate(1, [this]() {
 			if (_busy) return;
 			_busy = true;
